@@ -40,25 +40,30 @@ const Addresses = ({
   const [message, formAction] = useActionState(setAddresses, null)
 
   return (
-    <div className="bg-white">
+    <div
+      className="bg-white rounded-2xl p-6 transition-all duration-300"
+      style={{
+        border: "1px solid rgba(11,76,159,0.1)",
+        boxShadow: "0 4px 24px rgba(11,76,159,0.06)",
+      }}
+    >
       <div className="flex flex-row items-center justify-between mb-6">
         <Heading
           level="h2"
           className="flex flex-row text-3xl-regular gap-x-2 items-baseline"
+          style={{ fontFamily: "Inter, sans-serif", color: "#1a1a2e", fontWeight: 600 }}
         >
           Shipping Address
-          {!isOpen && <CheckCircleSolid />}
+          {!isOpen && <CheckCircleSolid className="text-[#0b4c9f]" />}
         </Heading>
         {!isOpen && cart?.shipping_address && (
-          <Text>
-            <button
-              onClick={handleEdit}
-              className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
-              data-testid="edit-address-button"
-            >
-              Edit
-            </button>
-          </Text>
+          <button
+            onClick={handleEdit}
+            className="text-[#0b4c9f] hover:text-[#faad14] font-medium transition-colors"
+            data-testid="edit-address-button"
+          >
+            Edit
+          </button>
         )}
       </div>
       {isOpen ? (

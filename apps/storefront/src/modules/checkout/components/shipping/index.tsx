@@ -107,6 +107,10 @@ const Shipping: React.FC<ShippingProps> = ({
     if (_pickupMethods?.find((m) => m.id === shippingMethodId)) {
       setShowPickupOptions(PICKUP_OPTION_ON)
     }
+
+    if (!shippingMethodId && _shippingMethods?.length) {
+      handleSetShippingMethod(_shippingMethods[0].id, "shipping")
+    }
   }, [availableShippingMethods])
 
   const handleEdit = () => {
@@ -152,7 +156,13 @@ const Shipping: React.FC<ShippingProps> = ({
   }, [isOpen])
 
   return (
-    <div className="bg-white">
+    <div
+      className="bg-white rounded-2xl p-6 transition-all duration-300"
+      style={{
+        border: "1px solid rgba(11,76,159,0.1)",
+        boxShadow: "0 4px 24px rgba(11,76,159,0.06)",
+      }}
+    >
       <div className="flex flex-row items-center justify-between mb-6">
         <Heading
           level="h2"
@@ -163,39 +173,38 @@ const Shipping: React.FC<ShippingProps> = ({
                 !isOpen && cart.shipping_methods?.length === 0,
             }
           )}
+          style={{ fontFamily: "Inter, sans-serif", color: "#1a1a2e", fontWeight: 600 }}
         >
           Delivery
           {!isOpen && (cart.shipping_methods?.length ?? 0) > 0 && (
-            <CheckCircleSolid />
+            <CheckCircleSolid className="text-[#0b4c9f]" />
           )}
         </Heading>
         {!isOpen &&
           cart?.shipping_address &&
           cart?.billing_address &&
           cart?.email && (
-            <Text>
-              <button
-                onClick={handleEdit}
-                className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
-                data-testid="edit-delivery-button"
-              >
-                Edit
-              </button>
-            </Text>
+            <button
+              onClick={handleEdit}
+              className="text-[#0b4c9f] hover:text-[#faad14] font-medium transition-colors"
+              data-testid="edit-delivery-button"
+            >
+              Edit
+            </button>
           )}
       </div>
       {isOpen ? (
         <>
           <div className="grid">
             <div className="flex flex-col">
-              <span className="font-medium txt-medium text-ui-fg-base">
-                Shipping method
+              <span className="font-medium txt-medium text-[#0b4c9f]">
+                Direct Delivery via Solar Tech Agent
               </span>
               <span className="mb-4 text-ui-fg-muted txt-medium">
-                How would you like you order delivered
+                Your order will be securely transported by our dedicated delivery agents from our warehouse to your location.
               </span>
             </div>
-            <div data-testid="delivery-options-container">
+            <div data-testid="delivery-options-container" className="hidden">
               <div className="pb-8 md:pt-0 pt-2">
                 {hasPickupOptions && (
                   <RadioGroup
@@ -387,16 +396,16 @@ const Shipping: React.FC<ShippingProps> = ({
         <div>
           <div className="text-small-regular">
             {cart && (cart.shipping_methods?.length ?? 0) > 0 && (
-              <div className="flex flex-col w-1/3">
+              <div className="flex flex-col w-2/3">
                 <Text className="txt-medium-plus text-ui-fg-base mb-1">
                   Method
                 </Text>
-                <Text className="txt-medium text-ui-fg-subtle">
-                  {cart.shipping_methods!.at(-1)!.name}{" "}
+                <Text className="txt-medium text-[#0b4c9f]">
+                  Direct Delivery via Solar Tech Agent (
                   {convertToLocale({
                     amount: cart.shipping_methods!.at(-1)!.amount!,
                     currency_code: cart?.currency_code,
-                  })}
+                  })})
                 </Text>
               </div>
             )}

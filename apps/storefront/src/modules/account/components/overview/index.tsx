@@ -6,18 +6,50 @@ import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
 
 type OverviewProps = {
-  customer: HttpTypes.StoreCustomer | null
+  customer: (HttpTypes.StoreCustomer & { groups?: any[] }) | null
   orders: HttpTypes.StoreOrder[] | null
 }
 
 const Overview = ({ customer, orders }: OverviewProps) => {
+  const isProfessional =
+    customer?.metadata?.is_professional === "true" ||
+    !!customer?.metadata?.profession
+
+  const isApproved =
+    customer?.metadata?.approved === "true" ||
+    customer?.groups?.some(
+      (g: any) =>
+        g.name.toLowerCase() === "electrician" ||
+        g.name.toLowerCase() === "electricians" ||
+        g.name.toLowerCase() === "professionals"
+    )
+
+  const professionName = (customer?.metadata?.profession as string) || "Partner"
+
   return (
     <div data-testid="overview-page-wrapper">
-      <div className="hidden small:block">
+      <div className="block">
         <div className="text-xl-semi flex justify-between items-center mb-4">
-          <span data-testid="welcome-message" data-value={customer?.first_name}>
-            Hello {customer?.first_name}
-          </span>
+          <div className="flex items-center gap-x-3">
+            <span data-testid="welcome-message" data-value={customer?.first_name}>
+              Hello {customer?.first_name}
+            </span>
+            {isProfessional && (
+              <>
+                {isApproved ? (
+                  <span className="inline-flex items-center gap-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    {professionName} (Approved)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 shadow-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    {professionName} (Pending Approval)
+                  </span>
+                )}
+              </>
+            )}
+          </div>
           <span className="text-small-regular text-ui-fg-base">
             Signed in as:{" "}
             <span
@@ -63,6 +95,24 @@ const Overview = ({ customer, orders }: OverviewProps) => {
                   </span>
                 </div>
               </div>
+
+              {/* @ts-ignore */}
+              {customer?.referral_code && (
+                <div className="flex flex-col gap-y-4">
+                  <h3 className="text-large-semi">Referral Code</h3>
+                  <div className="flex items-end gap-x-2">
+                    <span
+                      className="text-xl-semi leading-none bg-gray-100 px-3 py-2 rounded-md font-mono"
+                    >
+                      {/* @ts-ignore */}
+                      {Array.isArray(customer.referral_code) ? customer.referral_code[0]?.code : customer.referral_code.code}
+                    </span>
+                    <span className="uppercase text-base-regular text-emerald-600 font-semibold ml-2">
+                      Active
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-y-4">

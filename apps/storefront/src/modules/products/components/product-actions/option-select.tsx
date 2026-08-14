@@ -1,5 +1,4 @@
 import { HttpTypes } from "@medusajs/types"
-import { clx } from "@modules/common/components/ui"
 import React from "react"
 
 type OptionSelectProps = {
@@ -23,24 +22,34 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
 
   return (
     <div className="flex flex-col gap-y-3">
-      <span className="text-sm">Select {title}</span>
-      <div
-        className="flex flex-wrap justify-between gap-2"
-        data-testid={dataTestId}
+      <span
+        className="text-xs font-semibold uppercase tracking-wider"
+        style={{ color: "#6b6b8d" }}
       >
+        {title}
+      </span>
+      <div className="flex flex-wrap gap-2" data-testid={dataTestId}>
         {filteredOptions.map((v) => {
+          const isSelected = v === current
           return (
             <button
               onClick={() => updateOption(option.id, v)}
               key={v}
-              className={clx(
-                "border-ui-border-base bg-ui-bg-subtle border text-small-regular h-10 rounded-rounded p-2 flex-1 ",
-                {
-                  "border-ui-border-interactive": v === current,
-                  "hover:shadow-elevation-card-rest transition-shadow ease-in-out duration-150":
-                    v !== current,
-                }
-              )}
+              className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
+              style={{
+                background: isSelected
+                  ? "linear-gradient(135deg, #5f48c6, #8833cf)"
+                  : "rgba(95,72,198,0.06)",
+                color: isSelected ? "white" : "#3d3d6b",
+                border: isSelected
+                  ? "1.5px solid transparent"
+                  : "1.5px solid rgba(95,72,198,0.15)",
+                boxShadow: isSelected
+                  ? "0 3px 12px rgba(95,72,198,0.3)"
+                  : "none",
+                cursor: disabled ? "not-allowed" : "pointer",
+                opacity: disabled ? 0.5 : 1,
+              }}
               disabled={disabled}
               data-testid="option-button"
             >

@@ -3,8 +3,6 @@
 import { addToCart } from "@lib/data/cart"
 import { useIntersection } from "@lib/hooks/use-in-view"
 import { HttpTypes } from "@medusajs/types"
-import { Button } from "@modules/common/components/ui"
-import Divider from "@modules/common/components/divider"
 import OptionSelect from "@modules/products/components/product-actions/option-select"
 import { isEqual } from "lodash"
 import { useParams, usePathname, useSearchParams } from "next/navigation"
@@ -90,7 +88,7 @@ export default function ProductActions({
     }
 
     router.replace(pathname + "?" + params.toString())
-  }, [selectedVariant, isValidVariant])
+  }, [selectedVariant, isValidVariant, pathname, router, searchParams])
 
   // check if the selected variant is in stock
   const inStock = useMemo(() => {
@@ -135,9 +133,20 @@ export default function ProductActions({
     setIsAdding(false)
   }
 
+  const isDisabled = !inStock || !selectedVariant || !!disabled || isAdding || !isValidVariant
+
+  const buttonLabel = !selectedVariant && !options
+    ? "Select variant"
+    : !inStock || !isValidVariant
+    ? "Out of stock"
+    : isAdding
+    ? "Adding..."
+    : "Add to Cart"
+
   return (
     <>
-      <div className="flex flex-col gap-y-2" ref={actionsRef}>
+      <div className="flex flex-col gap-y-4" ref={actionsRef}>
+        {/* Variant options */}
         <div>
           {(product.variants?.length ?? 0) > 1 && (
             <div className="flex flex-col gap-y-4">
@@ -155,33 +164,62 @@ export default function ProductActions({
                   </div>
                 )
               })}
-              <Divider />
+              <div
+                className="h-px w-full"
+                style={{ background: "linear-gradient(90deg, rgba(95,72,198,0.3), transparent)" }}
+              />
             </div>
           )}
         </div>
 
+        {/* Price */}
         <ProductPrice product={product} variant={selectedVariant} />
 
-        <Button
+        {/* Add to Cart button */}
+        <button
           onClick={handleAddToCart}
-          disabled={
-            !inStock ||
-            !selectedVariant ||
-            !!disabled ||
-            isAdding ||
-            !isValidVariant
-          }
-          variant="primary"
-          className="w-full h-10"
-          isLoading={isAdding}
+          disabled={isDisabled}
           data-testid="add-product-button"
+          className="w-full py-4 rounded-xl font-semibold text-sm tracking-wide transition-all duration-300 relative overflow-hidden"
+          style={{
+            background: isDisabled
+              ? "#e5e7eb"
+              : "linear-gradient(135deg, #5f48c6 0%, #8833cf 100%)",
+            color: isDisabled ? "#9ca3af" : "white",
+            boxShadow: isDisabled ? "none" : "0 6px 24px rgba(95,72,198,0.35)",
+            cursor: isDisabled ? "not-allowed" : "pointer",
+          }}
+          onMouseEnter={(e) => {
+            if (!isDisabled) {
+              const el = e.currentTarget
+              el.style.transform = "translateY(-2px)"
+              el.style.boxShadow = "0 10px 32px rgba(95,72,198,0.45)"
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isDisabled) {
+              const el = e.currentTarget
+              el.style.transform = "translateY(0)"
+              el.style.boxShadow = "0 6px 24px rgba(95,72,198,0.35)"
+            }
+          }}
         >
-          {!selectedVariant && !options
-            ? "Select variant"
-            : !inStock || !isValidVariant
-            ? "Out of stock"
-            : "Add to cart"}
-        </Button>
+          <span className="relative z-10 flex items-center justify-center gap-2">
+            {isAdding && (
+              <svg
+                className="animate-spin w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" />
+                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+            )}
+            {buttonLabel}
+          </span>
+        </button>
+
         <MobileActions
           product={product}
           variant={selectedVariant}

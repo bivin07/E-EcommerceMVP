@@ -58,7 +58,7 @@ export const retrieveCustomer =
       .fetch<{ customer: HttpTypes.StoreCustomer }>(`/store/customers/me`, {
         method: "GET",
         query: {
-          fields: "*orders",
+          fields: "*orders,*groups,*referral_code",
         },
         headers,
         next,
@@ -94,6 +94,8 @@ export async function signup(
     first_name: formData.get("first_name") as string,
     last_name: formData.get("last_name") as string,
     phone: formData.get("phone") as string,
+    license_number: (formData.get("license_number") as string) || undefined,
+    profession: (formData.get("profession") as string) || undefined,
   }
 
   try {
@@ -196,12 +198,20 @@ async function completeLogin(
     const pending = await getPendingCustomer()
 
     try {
+      const metadata: Record<string, any> = {}
+      if (pending?.profession) {
+        metadata.is_professional = "true"
+        metadata.profession = pending.profession
+        metadata.approved = "false"
+      }
+
       await sdk.store.customer.create(
         {
           email,
           first_name: pending?.first_name,
           last_name: pending?.last_name,
           phone: pending?.phone,
+          metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         },
         {},
         { authorization: `Bearer ${token}` }

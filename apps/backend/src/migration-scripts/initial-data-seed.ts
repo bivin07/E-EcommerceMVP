@@ -35,7 +35,7 @@ export default async function initial_data_seed({
     ModuleRegistrationName.FULFILLMENT
   );
 
-  const countries = ["gb", "de", "dk", "se", "fr", "es", "it"];
+  const countries = ["in"];
 
   logger.info("Seeding store data...");
   const {
@@ -81,12 +81,8 @@ export default async function initial_data_seed({
           name: "Default Store",
           supported_currencies: [
             {
-              currency_code: "eur",
+              currency_code: "inr",
               is_default: true,
-            },
-            {
-              currency_code: "usd",
-              is_default: false,
             },
           ],
           default_sales_channel_id: defaultSalesChannel.id,
@@ -100,8 +96,8 @@ export default async function initial_data_seed({
     input: {
       regions: [
         {
-          name: "Europe",
-          currency_code: "eur",
+          name: "India",
+          currency_code: "inr",
           countries,
           payment_providers: ["pp_system_default"],
         },
@@ -127,10 +123,10 @@ export default async function initial_data_seed({
     input: {
       locations: [
         {
-          name: "European Warehouse",
+          name: "Kerala Warehouse",
           address: {
-            city: "Copenhagen",
-            country_code: "DK",
+            city: "Kochi",
+            country_code: "IN",
             address_1: "",
           },
         },
@@ -157,38 +153,14 @@ export default async function initial_data_seed({
   const shippingProfile = shippingProfileResult[0];
 
   const fulfillmentSet = await fulfillmentModuleService.createFulfillmentSets({
-    name: "European Warehouse delivery",
+    name: "Kerala Warehouse delivery",
     type: "shipping",
     service_zones: [
       {
-        name: "Europe",
+        name: "India",
         geo_zones: [
           {
-            country_code: "gb",
-            type: "country",
-          },
-          {
-            country_code: "de",
-            type: "country",
-          },
-          {
-            country_code: "dk",
-            type: "country",
-          },
-          {
-            country_code: "se",
-            type: "country",
-          },
-          {
-            country_code: "fr",
-            type: "country",
-          },
-          {
-            country_code: "es",
-            type: "country",
-          },
-          {
-            country_code: "it",
+            country_code: "in",
             type: "country",
           },
         ],
@@ -303,19 +275,19 @@ export default async function initial_data_seed({
     input: {
       product_categories: [
         {
-          name: "Shirts",
+          name: "Solar Panels",
           is_active: true,
         },
         {
-          name: "Sweatshirts",
+          name: "Inverters",
           is_active: true,
         },
         {
-          name: "Pants",
+          name: "Batteries",
           is_active: true,
         },
         {
-          name: "Merch",
+          name: "Wiring",
           is_active: true,
         },
       ],
@@ -328,193 +300,64 @@ export default async function initial_data_seed({
     input: {
       product_options: [
         {
-          title: "Size",
-          values: ["S", "M", "L", "XL"],
+          title: "Capacity",
+          values: ["300W", "400W", "500W", "150Ah", "200Ah"],
         },
         {
-          title: "Color",
-          values: ["Black", "White"],
+          title: "Voltage",
+          values: ["12V", "24V", "48V"],
         },
       ],
     },
   });
-  const sizeOption = productOptionsResult.find((o) => o.title === "Size")!;
-  const colorOption = productOptionsResult.find((o) => o.title === "Color")!;
+  const capacityOption = productOptionsResult.find((o) => o.title === "Capacity")!;
+  const voltageOption = productOptionsResult.find((o) => o.title === "Voltage")!;
 
   await createProductsWorkflow(container).run({
     input: {
       products: [
         {
-          title: "Medusa T-Shirt",
+          title: "Monocrystalline Solar Panel 500W",
           category_ids: [
-            categoryResult.find((cat) => cat.name === "Shirts")!.id,
+            categoryResult.find((cat) => cat.name === "Solar Panels")!.id,
           ],
-          description:
-            "Reimagine the feeling of a classic T-shirt. With our cotton T-shirts, everyday essentials no longer have to be ordinary.",
-          handle: "t-shirt",
-          weight: 400,
+          description: "High-efficiency 500W monocrystalline solar panel.",
+          handle: "mono-solar-panel-500w",
+          weight: 22000,
           status: ProductStatus.PUBLISHED,
           shipping_profile_id: shippingProfile.id,
           images: [
             {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/tee-black-front.png",
-            },
-            {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/tee-black-back.png",
-            },
-            {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/tee-white-front.png",
-            },
-            {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/tee-white-back.png",
+              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/tee-black-front.png", // Keep dummy image for now
             },
           ],
           options: [
-            { id: sizeOption.id },
-            { id: colorOption.id },
+            { id: capacityOption.id },
           ],
           variants: [
             {
-              title: "S / Black",
-              sku: "SHIRT-S-BLACK",
+              title: "500W",
+              sku: "SOLAR-PANEL-500W",
               options: {
-                Size: "S",
-                Color: "Black",
+                Capacity: "500W",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 15000,
+                  currency_code: "inr",
                 },
               ],
             },
             {
-              title: "S / White",
-              sku: "SHIRT-S-WHITE",
+              title: "400W",
+              sku: "SOLAR-PANEL-400W",
               options: {
-                Size: "S",
-                Color: "White",
+                Capacity: "400W",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
-                },
-              ],
-            },
-            {
-              title: "M / Black",
-              sku: "SHIRT-M-BLACK",
-              options: {
-                Size: "M",
-                Color: "Black",
-              },
-              prices: [
-                {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
-                },
-              ],
-            },
-            {
-              title: "M / White",
-              sku: "SHIRT-M-WHITE",
-              options: {
-                Size: "M",
-                Color: "White",
-              },
-              prices: [
-                {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
-                },
-              ],
-            },
-            {
-              title: "L / Black",
-              sku: "SHIRT-L-BLACK",
-              options: {
-                Size: "L",
-                Color: "Black",
-              },
-              prices: [
-                {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
-                },
-              ],
-            },
-            {
-              title: "L / White",
-              sku: "SHIRT-L-WHITE",
-              options: {
-                Size: "L",
-                Color: "White",
-              },
-              prices: [
-                {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
-                },
-              ],
-            },
-            {
-              title: "XL / Black",
-              sku: "SHIRT-XL-BLACK",
-              options: {
-                Size: "XL",
-                Color: "Black",
-              },
-              prices: [
-                {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
-                },
-              ],
-            },
-            {
-              title: "XL / White",
-              sku: "SHIRT-XL-WHITE",
-              options: {
-                Size: "XL",
-                Color: "White",
-              },
-              prices: [
-                {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 12000,
+                  currency_code: "inr",
                 },
               ],
             },
@@ -526,91 +369,45 @@ export default async function initial_data_seed({
           ],
         },
         {
-          title: "Medusa Sweatshirt",
+          title: "Luminous Solar Inverter",
           category_ids: [
-            categoryResult.find((cat) => cat.name === "Sweatshirts")!.id,
+            categoryResult.find((cat) => cat.name === "Inverters")!.id,
           ],
-          description:
-            "Reimagine the feeling of a classic sweatshirt. With our cotton sweatshirt, everyday essentials no longer have to be ordinary.",
-          handle: "sweatshirt",
-          weight: 400,
+          description: "Pure sine wave solar inverter for home use.",
+          handle: "luminous-solar-inverter",
+          weight: 15000,
           status: ProductStatus.PUBLISHED,
           shipping_profile_id: shippingProfile.id,
           images: [
             {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/sweatshirt-vintage-front.png",
-            },
-            {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/sweatshirt-vintage-back.png",
+              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/sweatshirt-vintage-front.png", // dummy image
             },
           ],
-          options: [{ id: sizeOption.id }],
+          options: [{ id: voltageOption.id }],
           variants: [
             {
-              title: "S",
-              sku: "SWEATSHIRT-S",
+              title: "12V",
+              sku: "INV-12V",
               options: {
-                Size: "S",
+                Voltage: "12V",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 8500,
+                  currency_code: "inr",
                 },
               ],
             },
             {
-              title: "M",
-              sku: "SWEATSHIRT-M",
+              title: "24V",
+              sku: "INV-24V",
               options: {
-                Size: "M",
+                Voltage: "24V",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
-                },
-              ],
-            },
-            {
-              title: "L",
-              sku: "SWEATSHIRT-L",
-              options: {
-                Size: "L",
-              },
-              prices: [
-                {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
-                },
-              ],
-            },
-            {
-              title: "XL",
-              sku: "SWEATSHIRT-XL",
-              options: {
-                Size: "XL",
-              },
-              prices: [
-                {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 12500,
+                  currency_code: "inr",
                 },
               ],
             },
@@ -622,187 +419,45 @@ export default async function initial_data_seed({
           ],
         },
         {
-          title: "Medusa Sweatpants",
+          title: "Exide Tubular Battery 150Ah",
           category_ids: [
-            categoryResult.find((cat) => cat.name === "Pants")!.id,
+            categoryResult.find((cat) => cat.name === "Batteries")!.id,
           ],
-          description:
-            "Reimagine the feeling of classic sweatpants. With our cotton sweatpants, everyday essentials no longer have to be ordinary.",
-          handle: "sweatpants",
-          weight: 400,
+          description: "Deep cycle tubular battery designed for long backup.",
+          handle: "exide-battery-150ah",
+          weight: 45000,
           status: ProductStatus.PUBLISHED,
           shipping_profile_id: shippingProfile.id,
           images: [
             {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/sweatpants-gray-front.png",
-            },
-            {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/sweatpants-gray-back.png",
+              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/sweatpants-gray-front.png", // dummy image
             },
           ],
-          options: [{ id: sizeOption.id }],
+          options: [{ id: capacityOption.id }],
           variants: [
             {
-              title: "S",
-              sku: "SWEATPANTS-S",
+              title: "150Ah",
+              sku: "BAT-150AH",
               options: {
-                Size: "S",
+                Capacity: "150Ah",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 14000,
+                  currency_code: "inr",
                 },
               ],
             },
             {
-              title: "M",
-              sku: "SWEATPANTS-M",
+              title: "200Ah",
+              sku: "BAT-200AH",
               options: {
-                Size: "M",
+                Capacity: "200Ah",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
-                },
-              ],
-            },
-            {
-              title: "L",
-              sku: "SWEATPANTS-L",
-              options: {
-                Size: "L",
-              },
-              prices: [
-                {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
-                },
-              ],
-            },
-            {
-              title: "XL",
-              sku: "SWEATPANTS-XL",
-              options: {
-                Size: "XL",
-              },
-              prices: [
-                {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
-                },
-              ],
-            },
-          ],
-          sales_channels: [
-            {
-              id: defaultSalesChannel.id,
-            },
-          ],
-        },
-        {
-          title: "Medusa Shorts",
-          category_ids: [
-            categoryResult.find((cat) => cat.name === "Merch")!.id,
-          ],
-          description:
-            "Reimagine the feeling of classic shorts. With our cotton shorts, everyday essentials no longer have to be ordinary.",
-          handle: "shorts",
-          weight: 400,
-          status: ProductStatus.PUBLISHED,
-          shipping_profile_id: shippingProfile.id,
-          images: [
-            {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/shorts-vintage-front.png",
-            },
-            {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/shorts-vintage-back.png",
-            },
-          ],
-          options: [{ id: sizeOption.id }],
-          variants: [
-            {
-              title: "S",
-              sku: "SHORTS-S",
-              options: {
-                Size: "S",
-              },
-              prices: [
-                {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
-                },
-              ],
-            },
-            {
-              title: "M",
-              sku: "SHORTS-M",
-              options: {
-                Size: "M",
-              },
-              prices: [
-                {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
-                },
-              ],
-            },
-            {
-              title: "L",
-              sku: "SHORTS-L",
-              options: {
-                Size: "L",
-              },
-              prices: [
-                {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
-                },
-              ],
-            },
-            {
-              title: "XL",
-              sku: "SHORTS-XL",
-              options: {
-                Size: "XL",
-              },
-              prices: [
-                {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 18000,
+                  currency_code: "inr",
                 },
               ],
             },

@@ -1,105 +1,113 @@
-import { listCategories } from "@lib/data/categories";
-import { listCollections } from "@lib/data/collections";
-import { Text, clx } from "@modules/common/components/ui";
-
-import LocalizedClientLink from "@modules/common/components/localized-client-link";
-import MedusaCTA from "@modules/layout/components/medusa-cta";
+import { listCategories } from "@lib/data/categories"
+import { listCollections } from "@lib/data/collections"
+import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import { retrieveCustomer } from "@lib/data/customer"
 
 export default async function Footer() {
-  const { collections } = await listCollections({
-    fields: "*products",
-  });
-  const productCategories = await listCategories();
+  const [customer, { collections }, productCategories] = await Promise.all([
+    retrieveCustomer(),
+    listCollections({ fields: "*products" }),
+    listCategories(),
+  ])
+
+  const isDeliveryAgent = customer?.groups?.some(
+    (g: any) => g.name.toLowerCase() === "delivery agents" || g.name.toLowerCase() === "delivery agent"
+  )
 
   return (
-    <footer className="border-t border-ui-border-base w-full">
-      <div className="content-container flex flex-col w-full">
-        <div className="flex flex-col gap-y-6 xsmall:flex-row items-start justify-between py-40">
-          <div>
-            <LocalizedClientLink
-              href="/"
-              className="txt-compact-xlarge-plus text-ui-fg-subtle hover:text-ui-fg-base uppercase"
+    <footer
+      style={{
+        background: "linear-gradient(180deg, #0a1930 0%, #061020 100%)",
+        color: "white",
+      }}
+    >
+      {/* Blue/Orange gradient top accent */}
+      <div
+        className="h-1 w-full"
+        style={{ background: "linear-gradient(90deg, #0b4c9f, #1565c0, #fa6a19)" }}
+      />
+
+      <div className="content-container py-16">
+        {/* Top section */}
+        <div className="flex flex-col gap-y-10 xsmall:flex-row items-start justify-between">
+
+          {/* Brand column */}
+          <div className="flex flex-col gap-4 max-w-xs">
+            {/* Logo */}
+            <div className="flex items-center gap-2">
+              <LocalizedClientLink href="/">
+                <img 
+                  src="https://solartechind.com/website/images/logo.png" 
+                  alt="Solar Tech Logo" 
+                  className="h-12 w-auto object-contain brightness-0 invert opacity-90 hover:opacity-100 transition-opacity"
+                />
+              </LocalizedClientLink>
+            </div>
+            <p className="text-sm leading-relaxed" style={{ color: "#8ba3b8" }}>
+              Power your home or business in Kerala with smart, reliable solar energy that’s simple, sustainable, and future-ready.
+            </p>
+            {/* Trust badge */}
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold w-fit"
+              style={{
+                background: "rgba(11,76,159,0.2)",
+                border: "1px solid rgba(11,76,159,0.35)",
+                color: "#60a5fa",
+              }}
             >
-              Medusa Store
-            </LocalizedClientLink>
+              <span style={{ color: "#faad14" }}>☀️</span>
+              1,000+ Installations in Kerala
+            </div>
           </div>
-          <div className="text-small-regular gap-10 md:gap-x-16 grid grid-cols-2 sm:grid-cols-3">
-            {productCategories && productCategories?.length > 0 && (
-              <div className="flex flex-col gap-y-2">
-                <span className="txt-small-plus txt-ui-fg-base">
+
+          {/* Links grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-16 gap-y-8 text-sm">
+            {/* Categories */}
+            {!isDeliveryAgent && productCategories && productCategories.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <p
+                  className="font-semibold uppercase tracking-widest text-xs"
+                  style={{ color: "#60a5fa" }}
+                >
                   Categories
-                </span>
+                </p>
                 <ul
-                  className="grid grid-cols-1 gap-2"
+                  className="flex flex-col gap-2"
                   data-testid="footer-categories"
                 >
-                  {productCategories?.slice(0, 6).map((c) => {
-                    if (c.parent_category) {
-                      return;
-                    }
-
-                    const children =
-                      c.category_children?.map((child) => ({
-                        name: child.name,
-                        handle: child.handle,
-                        id: child.id,
-                      })) || null;
-
+                  {productCategories.slice(0, 6).map((c) => {
+                    if (c.parent_category) return null
                     return (
-                      <li
-                        className="flex flex-col gap-2 text-ui-fg-subtle txt-small"
-                        key={c.id}
-                      >
+                      <li key={c.id}>
                         <LocalizedClientLink
-                          className={clx(
-                            "hover:text-ui-fg-base",
-                            children && "txt-small-plus"
-                          )}
                           href={`/categories/${c.handle}`}
+                          className="transition-colors duration-200 text-[#8ba3b8] hover:text-[#faad14]"
                           data-testid="category-link"
                         >
                           {c.name}
                         </LocalizedClientLink>
-                        {children && (
-                          <ul className="grid grid-cols-1 ml-3 gap-2">
-                            {children &&
-                              children.map((child) => (
-                                <li key={child.id}>
-                                  <LocalizedClientLink
-                                    className="hover:text-ui-fg-base"
-                                    href={`/categories/${child.handle}`}
-                                    data-testid="category-link"
-                                  >
-                                    {child.name}
-                                  </LocalizedClientLink>
-                                </li>
-                              ))}
-                          </ul>
-                        )}
                       </li>
-                    );
+                    )
                   })}
                 </ul>
               </div>
             )}
-            {collections && collections.length > 0 && (
-              <div className="flex flex-col gap-y-2">
-                <span className="txt-small-plus txt-ui-fg-base">
-                  Collections
-                </span>
-                <ul
-                  className={clx(
-                    "grid grid-cols-1 gap-2 text-ui-fg-subtle txt-small",
-                    {
-                      "grid-cols-2": (collections?.length || 0) > 3,
-                    }
-                  )}
+
+            {/* Collections */}
+            {!isDeliveryAgent && collections && collections.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <p
+                  className="font-semibold uppercase tracking-widest text-xs"
+                  style={{ color: "#60a5fa" }}
                 >
-                  {collections?.slice(0, 6).map((c) => (
+                  Collections
+                </p>
+                <ul className="flex flex-col gap-2">
+                  {collections.slice(0, 6).map((c) => (
                     <li key={c.id}>
                       <LocalizedClientLink
-                        className="hover:text-ui-fg-base"
                         href={`/collections/${c.handle}`}
+                        className="transition-colors duration-200 text-[#8ba3b8] hover:text-[#faad14]"
                       >
                         {c.title}
                       </LocalizedClientLink>
@@ -108,50 +116,106 @@ export default async function Footer() {
                 </ul>
               </div>
             )}
-            <div className="flex flex-col gap-y-2">
-              <span className="txt-small-plus txt-ui-fg-base">Medusa</span>
-              <ul className="grid grid-cols-1 gap-y-2 text-ui-fg-subtle txt-small">
-                <li>
-                  <a
-                    href="https://github.com/medusajs"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-ui-fg-base"
-                  >
-                    GitHub
-                  </a>
-                </li>
+
+            {/* Company / Portal */}
+            <div className="flex flex-col gap-3">
+              <p
+                className="font-semibold uppercase tracking-widest text-xs"
+                style={{ color: "#60a5fa" }}
+              >
+                {isDeliveryAgent ? "Portal" : "Company"}
+              </p>
+              <ul className="flex flex-col gap-2">
+                {isDeliveryAgent ? (
+                  <>
+                    <li>
+                      <LocalizedClientLink
+                        href="/account/delivery"
+                        className="transition-colors duration-200 text-[#8ba3b8] hover:text-[#faad14]"
+                      >
+                        Delivery Portal
+                      </LocalizedClientLink>
+                    </li>
+                    <li>
+                      <LocalizedClientLink
+                        href="/account"
+                        className="transition-colors duration-200 text-[#8ba3b8] hover:text-[#faad14]"
+                      >
+                        My Account
+                      </LocalizedClientLink>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li>
+                      <LocalizedClientLink
+                        href="/store"
+                        className="transition-colors duration-200 text-[#8ba3b8] hover:text-[#faad14]"
+                      >
+                        All Products
+                      </LocalizedClientLink>
+                    </li>
+                    <li>
+                      <LocalizedClientLink
+                        href="/account"
+                        className="transition-colors duration-200 text-[#8ba3b8] hover:text-[#faad14]"
+                      >
+                        My Account
+                      </LocalizedClientLink>
+                    </li>
+                    <li>
+                      <LocalizedClientLink
+                        href="/cart"
+                        className="transition-colors duration-200 text-[#8ba3b8] hover:text-[#faad14]"
+                      >
+                        Cart
+                      </LocalizedClientLink>
+                    </li>
+                  </>
+                )}
                 <li>
                   <a
                     href="https://docs.medusajs.com"
                     target="_blank"
                     rel="noreferrer"
-                    className="hover:text-ui-fg-base"
+                    className="transition-colors duration-200 text-[#8ba3b8] hover:text-[#faad14]"
                   >
                     Documentation
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://github.com/medusajs/dtc-starter"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-ui-fg-base"
-                  >
-                    Source code
                   </a>
                 </li>
               </ul>
             </div>
           </div>
         </div>
-        <div className="flex w-full mb-16 justify-between text-ui-fg-muted">
-          <Text className="txt-compact-small">
-            © {new Date().getFullYear()} Medusa Store. All rights reserved.
-          </Text>
-          <MedusaCTA />
+
+        {/* Bottom bar */}
+        <div
+          className="mt-12 pt-6 flex flex-col xsmall:flex-row items-center justify-between gap-4"
+          style={{ borderTop: "1px solid rgba(11,76,159,0.3)" }}
+        >
+          <p className="text-xs" style={{ color: "#8ba3b8" }}>
+            © {new Date().getFullYear()}{" "}
+            <span style={{ color: "#60a5fa" }}>Solar Tech</span>. All rights
+            reserved.
+          </p>
+
+          <div className="flex items-center gap-1">
+            <span className="text-xs" style={{ color: "#8ba3b8" }}>
+              Built with
+            </span>
+            <span style={{ color: "#faad14", marginLeft: "4px", marginRight: "4px" }}>☀️</span>
+            <a
+              href="https://medusajs.com"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs font-medium transition-colors duration-200 hover:text-[#faad14]"
+              style={{ color: "#8ba3b8" }}
+            >
+              Medusa
+            </a>
+          </div>
         </div>
       </div>
     </footer>
-  );
+  )
 }

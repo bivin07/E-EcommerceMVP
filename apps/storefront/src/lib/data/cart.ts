@@ -24,7 +24,7 @@ import { getLocale } from "./locale-actions"
 export async function retrieveCart(cartId?: string, fields?: string) {
   const id = cartId || (await getCartId())
   fields ??=
-    "*items, *region, *items.product, *items.variant, *items.thumbnail, *items.metadata, +items.total, *promotions, +shipping_methods.name"
+    "*items, *region, *items.variant, *items.variant.product, *items.variant.product.images, *items.thumbnail, *items.metadata, +items.total, *promotions, +shipping_methods.name"
 
   if (!id) {
     return null
@@ -360,6 +360,11 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       email: formData.get("email"),
     } as any
 
+    const orderingForClient = formData.get("ordering_for_client") === "on"
+    if (orderingForClient) {
+      data.metadata = { ordered_by_electrician: true }
+    }
+
     const sameAsBilling = formData.get("same_as_billing")
     if (sameAsBilling === "on") data.billing_address = data.shipping_address
 
@@ -469,5 +474,5 @@ export async function listCartOptions() {
     next,
     headers,
     cache: "force-cache",
-  })
+  }).catch(() => ({ shipping_options: [] }))
 }

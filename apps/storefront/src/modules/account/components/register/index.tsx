@@ -1,7 +1,8 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useState } from "react"
 import Input from "@modules/common/components/input"
+import NativeSelect from "@modules/common/components/native-select"
 import { LOGIN_VIEW } from "@modules/account/templates/login-template"
 import ErrorMessage from "@modules/checkout/components/error-message"
 import { SubmitButton } from "@modules/checkout/components/submit-button"
@@ -14,6 +15,7 @@ type Props = {
 
 const Register = ({ setCurrentView }: Props) => {
   const [message, formAction] = useActionState(signup, null)
+  const [isProfessional, setIsProfessional] = useState(false)
 
   return (
     <div
@@ -21,12 +23,37 @@ const Register = ({ setCurrentView }: Props) => {
       data-testid="register-page"
     >
       <h1 className="text-large-semi uppercase mb-6">
-        Become a Medusa Store Member
+        {isProfessional ? "Register as a Professional Partner" : "Become a Store Member"}
       </h1>
       <p className="text-center text-base-regular text-ui-fg-base mb-4">
-        Create your Medusa Store Member profile, and get access to an enhanced
-        shopping experience.
+        {isProfessional 
+          ? "Apply for partner benefits, trade discounts, and referral rewards." 
+          : "Create your Customer profile and get access to an enhanced shopping experience."
+        }
       </p>
+
+      {/* Account Type Selector Tabs */}
+      <div className="flex w-full mb-6 border border-ui-border-base rounded-rounded p-1 bg-ui-bg-subtle">
+        <button
+          type="button"
+          onClick={() => setIsProfessional(false)}
+          className={`flex-1 py-1.5 text-xs font-semibold rounded-sm transition-all ${
+            !isProfessional ? "bg-white shadow text-black" : "text-ui-fg-subtle"
+          }`}
+        >
+          Customer Account
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsProfessional(true)}
+          className={`flex-1 py-1.5 text-xs font-semibold rounded-sm transition-all ${
+            isProfessional ? "bg-white shadow text-black" : "text-ui-fg-subtle"
+          }`}
+        >
+          Professional Partner
+        </button>
+      </div>
+
       {message?.state === "verification_required" && (
         <div
           className="w-full mb-4 text-center text-base-regular text-ui-fg-base bg-ui-bg-subtle border border-ui-border-base rounded-rounded p-4"
@@ -38,20 +65,22 @@ const Register = ({ setCurrentView }: Props) => {
       )}
       <form className="w-full flex flex-col" action={formAction}>
         <div className="flex flex-col w-full gap-y-2">
-          <Input
-            label="First name"
-            name="first_name"
-            required
-            autoComplete="given-name"
-            data-testid="first-name-input"
-          />
-          <Input
-            label="Last name"
-            name="last_name"
-            required
-            autoComplete="family-name"
-            data-testid="last-name-input"
-          />
+          <div className="flex gap-x-2">
+            <Input
+              label="First name"
+              name="first_name"
+              required
+              autoComplete="given-name"
+              data-testid="first-name-input"
+            />
+            <Input
+              label="Last name"
+              name="last_name"
+              required
+              autoComplete="family-name"
+              data-testid="last-name-input"
+            />
+          </div>
           <Input
             label="Email"
             name="email"
@@ -67,6 +96,20 @@ const Register = ({ setCurrentView }: Props) => {
             autoComplete="tel"
             data-testid="phone-input"
           />
+
+          {isProfessional && (
+            <div className="flex flex-col gap-y-2 mt-2 pt-2 border-t border-ui-border-base">
+              <NativeSelect
+                name="profession"
+                required
+                data-testid="profession-select"
+              >
+                <option value="Electrician">Electrician</option>
+                <option value="Delivery Agent">Delivery Agent</option>
+              </NativeSelect>
+            </div>
+          )}
+
           <Input
             label="Password"
             name="password"
@@ -81,7 +124,7 @@ const Register = ({ setCurrentView }: Props) => {
           data-testid="register-error"
         />
         <span className="text-center text-ui-fg-base text-small-regular mt-6">
-          By creating an account, you agree to Medusa Store&apos;s{" "}
+          By creating an account, you agree to the store&apos;s{" "}
           <LocalizedClientLink
             href="/content/privacy-policy"
             className="underline"
@@ -98,7 +141,7 @@ const Register = ({ setCurrentView }: Props) => {
           .
         </span>
         <SubmitButton className="w-full mt-6" data-testid="register-button">
-          Join
+          {isProfessional ? "Submit Application" : "Join"}
         </SubmitButton>
       </form>
       <span className="text-center text-ui-fg-base text-small-regular mt-6">

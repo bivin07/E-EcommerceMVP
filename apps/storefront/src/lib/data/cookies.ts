@@ -1,4 +1,4 @@
-import "server-only"
+  import "server-only"
 import { cookies as nextCookies } from "next/headers"
 
 export const getAuthHeaders = async (): Promise<
@@ -71,6 +71,8 @@ export type PendingCustomer = {
   first_name?: string
   last_name?: string
   phone?: string
+  license_number?: string
+  profession?: string
 }
 
 // During the email verification flow the customer record isn't created until

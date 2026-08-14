@@ -13,7 +13,7 @@ const ShippingAddress = ({
   checked,
   onChange,
 }: {
-  customer: HttpTypes.StoreCustomer | null
+  customer: (HttpTypes.StoreCustomer & { groups?: any[] }) | null
   cart: HttpTypes.StoreCart | null
   checked: boolean
   onChange: () => void
@@ -35,6 +35,12 @@ const ShippingAddress = ({
     () => cart?.region?.countries?.map((c) => c.iso_2),
     [cart?.region]
   )
+
+  const isElectrician = customer?.groups?.some(
+    (g: any) => g.name.toLowerCase() === "electrician" || g.name.toLowerCase() === "electricians"
+  )
+  const clients = Array.isArray(customer?.metadata?.clients) ? customer?.metadata?.clients : []
+  const [orderingForClient, setOrderingForClient] = useState(false)
 
   // check if customer has saved addresses that are in the current region
   const addressesInRegion = useMemo(
@@ -72,6 +78,25 @@ const ShippingAddress = ({
     }
   }
 
+  const setClientAddress = (clientId: string) => {
+    const client = clients.find((c: any) => c.id === clientId)
+    if (client) {
+      setFormData((prevState: Record<string, string>) => ({
+        ...prevState,
+        "shipping_address.first_name": client.first_name || "",
+        "shipping_address.last_name": client.last_name || "",
+        "shipping_address.address_1": client.address_1 || "",
+        "shipping_address.company": "",
+        "shipping_address.postal_code": client.postal_code || "",
+        "shipping_address.city": client.city || "",
+        "shipping_address.country_code": client.country_code || "",
+        "shipping_address.province": "",
+        "shipping_address.phone": client.phone || "",
+        email: client.email || "",
+      }))
+    }
+  }
+
   useEffect(() => {
     // Ensure cart is not null and has a shipping_address before setting form data
     if (cart && cart.shipping_address) {
@@ -96,7 +121,42 @@ const ShippingAddress = ({
 
   return (
     <>
-      {customer && (addressesInRegion?.length || 0) > 0 && (
+      {isElectrician && clients.length > 0 && (
+        <Container className="mb-6 flex flex-col gap-y-4 p-5 bg-blue-50 border border-blue-200">
+          <div className="flex items-center gap-x-2">
+            <Checkbox
+              label=""
+              name="ordering_for_client"
+              checked={orderingForClient}
+              onChange={() => setOrderingForClient(!orderingForClient)}
+            />
+            <p className="text-base-semi text-[#0b4c9f]">
+              Ordering on behalf of a Client?
+            </p>
+          </div>
+          {orderingForClient && (
+            <div className="flex flex-col gap-y-2 mt-2">
+              <p className="text-small-regular text-blue-800">
+                Select a saved client. Their details will auto-fill below and the final receipt will be emailed directly to them.
+              </p>
+              <select
+                className="w-full px-4 py-[10px] bg-white border rounded-rounded text-base-regular focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0b4c9f]"
+                onChange={(e) => setClientAddress(e.target.value)}
+                defaultValue=""
+              >
+                <option value="" disabled>Select a client...</option>
+                {clients.map((c: any) => (
+                  <option key={c.id} value={c.id}>
+                    {c.first_name} {c.last_name} ({c.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </Container>
+      )}
+
+      {customer && (addressesInRegion?.length || 0) > 0 && !orderingForClient && (
         <Container className="mb-6 flex flex-col gap-y-4 p-5">
           <p className="text-small-regular">
             {`Hi ${customer.first_name}, do you want to use one of your saved addresses?`}
