@@ -40,8 +40,13 @@ async function requestVerificationEmail(email: string, token: string) {
   )
 }
 
+export type StoreCustomerWithGroups = HttpTypes.StoreCustomer & {
+  groups?: { id: string; name: string }[]
+  referral_code?: any
+}
+
 export const retrieveCustomer =
-  async (): Promise<HttpTypes.StoreCustomer | null> => {
+  async (): Promise<StoreCustomerWithGroups | null> => {
     const authHeaders = await getAuthHeaders()
 
     if (!authHeaders) return null
@@ -55,7 +60,7 @@ export const retrieveCustomer =
     }
 
     return await sdk.client
-      .fetch<{ customer: HttpTypes.StoreCustomer }>(`/store/customers/me`, {
+      .fetch<{ customer: StoreCustomerWithGroups }>(`/store/customers/me`, {
         method: "GET",
         query: {
           fields: "*orders,*groups,*referral_code",

@@ -31,11 +31,11 @@ export async function generateStaticParams() {
   }
 
   const countryCodes = await listRegions().then(
-    (regions: StoreRegion[]) =>
+    (regions) =>
       regions
         ?.map((r) => r.countries?.map((c) => c.iso_2))
         .flat()
-        .filter(Boolean) as string[]
+        .filter(Boolean) as string[] || []
   )
 
   const collectionHandles = collections.map(
