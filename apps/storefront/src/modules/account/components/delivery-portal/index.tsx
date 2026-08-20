@@ -1,31 +1,167 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { fetchDeliveryOrders, updateDeliveryStatus } from "./actions"
 import { Heading, Text, clx } from "@modules/common/components/ui"
 import { CheckCircleSolid, MapPin, Phone } from "@medusajs/icons"
+
+const playNotificationSound = () => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioContextClass) return
+    const audioCtx = new AudioContextClass()
+    
+    const playNote = (frequency: number, startTime: number, duration: number) => {
+      const osc = audioCtx.createOscillator()
+      const gainNode = audioCtx.createGain()
+      
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(frequency, startTime)
+      
+      gainNode.gain.setValueAtTime(0.2, startTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
+      
+      osc.connect(gainNode)
+      gainNode.connect(audioCtx.destination)
+      
+      osc.start(startTime)
+      osc.stop(startTime + duration)
+    }
+
+    const now = audioCtx.currentTime
+    // Double beep chime (Swiggy dispatch tone style)
+    playNote(587.33, now, 0.2) // D5
+    playNote(698.46, now + 0.1, 0.2) // F5
+    playNote(880.00, now + 0.2, 0.35) // A5
+  } catch (error) {
+    console.warn("Audio playback blocked or failed:", error)
+  }
+}
+
+function RadarWaitingScreen() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center py-20 px-6 text-center animate-in fade-in duration-500">
+      <div className="relative w-36 h-36 flex items-center justify-center mb-8">
+        <div className="absolute inset-0 rounded-full border border-green-500/10 animate-ping" style={{ animationDuration: '3s' }} />
+        <div className="absolute w-24 h-24 rounded-full border border-green-500/20 animate-ping" style={{ animationDuration: '2s' }} />
+        <div className="absolute w-14 h-14 rounded-full border border-green-500/30 animate-ping" style={{ animationDuration: '1.5s' }} />
+        
+        <div className="relative w-10 h-10 rounded-full bg-green-50 border-2 border-green-500 flex items-center justify-center shadow-lg shadow-green-500/10">
+          <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+        </div>
+      </div>
+
+      <Text className="text-base font-bold text-gray-900 mb-1.5">Looking for orders...</Text>
+      <Text className="text-xs text-gray-500 max-w-xs leading-normal">
+        You are currently online. Incoming delivery requests in your area will pop up here instantly.
+      </Text>
+    </div>
+  )
+}
 
 export default function DeliveryPortal() {
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [pincodes, setPincodes] = useState<string[]>([])
-  const [activeTab, setActiveTab] = useState<"available" | "active">("available")
+  const [suppressedOrderIds, setSuppressedOrderIds] = useState<string[]>([])
 
-  const loadOrders = async () => {
-    setLoading(true)
+  // Alert & Polling refs
+  const [newOrderAlert, setNewOrderAlert] = useState<any>(null)
+  const prevAvailableIdsRef = useRef<string[]>([])
+  const isFirstLoadRef = useRef(true)
+  const suppressedRef = useRef<string[]>([])
+
+  const suppressOrder = (id: string) => {
+    suppressedRef.current = [...suppressedRef.current, id]
+    setSuppressedOrderIds(suppressedRef.current)
+  }
+
+  const loadOrders = async (showLoadingSpinner = false) => {
+    if (showLoadingSpinner) setLoading(true)
     const res = await fetchDeliveryOrders()
     if (res.success) {
-      setOrders(res.orders || [])
+      const allOrders = res.orders || []
+      setOrders(allOrders)
       setPincodes(res.servicePincodes || [])
+
+      // Filter available (pending) orders
+      const currentAvailable = allOrders.filter(
+        (o: any) => (!o.metadata?.delivery_status || o.metadata?.delivery_status === "pending") && !suppressedRef.current.includes(o.id)
+      )
+      const currentAvailableIds = currentAvailable.map((o: any) => o.id)
+
+      // Only check for new alerts if it's NOT the very first load
+      if (!isFirstLoadRef.current) {
+        const newlyAdded = currentAvailable.filter(
+          (o: any) => !prevAvailableIdsRef.current.includes(o.id)
+        )
+        if (newlyAdded.length > 0) {
+          setNewOrderAlert(newlyAdded[0])
+        }
+      }
+
+      prevAvailableIdsRef.current = currentAvailableIds
+      isFirstLoadRef.current = false
     }
-    setLoading(false)
+    if (showLoadingSpinner) setLoading(false)
   }
 
   useEffect(() => {
-    loadOrders()
+    loadOrders(true)
+
+    const interval = setInterval(() => {
+      loadOrders(false)
+    }, 6000) // Poll every 6 seconds
+
+    // Unblock audio context on first user click or touch interaction
+    const unlockAudio = () => {
+      try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+        if (AudioContextClass) {
+          const audioCtx = new AudioContextClass()
+          const buffer = audioCtx.createBuffer(1, 1, 22050)
+          const source = audioCtx.createBufferSource()
+          source.buffer = buffer
+          source.connect(audioCtx.destination)
+          source.start(0)
+          if (audioCtx.state === "suspended") {
+            audioCtx.resume()
+          }
+        }
+      } catch (e) {
+        console.warn("Could not pre-unlock audio:", e)
+      }
+      window.removeEventListener("click", unlockAudio)
+      window.removeEventListener("touchstart", unlockAudio)
+    }
+
+    window.addEventListener("click", unlockAudio)
+    window.addEventListener("touchstart", unlockAudio)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener("click", unlockAudio)
+      window.removeEventListener("touchstart", unlockAudio)
+    }
   }, [])
 
+  // Loop alert sound chime while notification modal is visible
+  useEffect(() => {
+    if (!newOrderAlert) return
+
+    playNotificationSound() // Play immediately
+
+    const chimeInterval = setInterval(() => {
+      playNotificationSound()
+    }, 1500) // Re-chime every 1.5 seconds
+
+    return () => clearInterval(chimeInterval)
+  }, [newOrderAlert])
+
   const handleUpdateStatus = async (orderId: string, status: string) => {
+    if (status === "pending") {
+      suppressOrder(orderId)
+    }
     setOrders((prev) => 
       prev.map(o => o.id === orderId ? { ...o, metadata: { ...o.metadata, delivery_status: status } } : o)
     )
@@ -33,7 +169,7 @@ export default function DeliveryPortal() {
     loadOrders()
   }
 
-  const availableOrders = orders.filter(o => !o.metadata?.delivery_status || o.metadata?.delivery_status === "pending")
+  const availableOrders = orders.filter(o => (!o.metadata?.delivery_status || o.metadata?.delivery_status === "pending") && !suppressedOrderIds.includes(o.id))
   const activeOrders = orders.filter(o => o.metadata?.delivery_status === "assigned" || o.metadata?.delivery_status === "picked_up")
 
   if (loading) {
@@ -45,66 +181,108 @@ export default function DeliveryPortal() {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto min-h-screen bg-gray-100 font-sans pb-24">
+    <div className="w-full max-w-md mx-auto min-h-screen bg-gray-100 font-sans pb-24 relative flex flex-col">
       {/* App Bar */}
       <div className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm">
         <div className="px-4 py-4 flex items-center justify-between">
-          <Heading className="text-xl font-bold text-gray-900">Orders</Heading>
+          <Heading className="text-xl font-bold text-gray-900">Deliveries</Heading>
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
             <Text className="text-xs font-bold text-gray-600 uppercase tracking-wider">Online</Text>
           </div>
         </div>
-        
-        {/* Compact Tabs */}
-        <div className="flex px-2 pb-0">
-          <button
-            onClick={() => setActiveTab("available")}
-            className={clx("flex-1 pb-3 text-sm font-bold transition-colors border-b-2", {
-              "border-[#5f48c6] text-[#5f48c6]": activeTab === "available",
-              "border-transparent text-gray-500 hover:text-gray-800": activeTab !== "available"
-            })}
-          >
-            New ({availableOrders.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("active")}
-            className={clx("flex-1 pb-3 text-sm font-bold transition-colors border-b-2", {
-              "border-[#fa6a19] text-[#fa6a19]": activeTab === "active",
-              "border-transparent text-gray-500 hover:text-gray-800": activeTab !== "active"
-            })}
-          >
-            Active ({activeOrders.length})
-          </button>
-        </div>
       </div>
 
-      {/* List Container */}
-      <div className="p-3 flex flex-col gap-2">
-        {activeTab === "available" && (
-          availableOrders.length > 0 ? (
-            availableOrders.map((order) => (
-              <SwiggyOrderCard key={order.id} order={order} type="available" onUpdate={handleUpdateStatus} />
-            ))
-          ) : (
-            <div className="text-center py-20 flex flex-col items-center">
-              <Text className="text-gray-400 font-medium">No new orders available.</Text>
-            </div>
-          )
-        )}
-
-        {activeTab === "active" && (
-          activeOrders.length > 0 ? (
-            activeOrders.map((order) => (
+      {/* Content Container */}
+      <div className="p-3 flex flex-col gap-2 flex-1">
+        {activeOrders.length > 0 ? (
+          <>
+            <Text className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 px-1">Active Deliveries ({activeOrders.length})</Text>
+            {activeOrders.map((order) => (
               <SwiggyOrderCard key={order.id} order={order} type="active" onUpdate={handleUpdateStatus} />
-            ))
-          ) : (
-            <div className="text-center py-20 flex flex-col items-center">
-              <Text className="text-gray-400 font-medium">No active deliveries.</Text>
-            </div>
-          )
+            ))}
+          </>
+        ) : (
+          <RadarWaitingScreen />
         )}
       </div>
+
+      {/* Visual Alert Modal (Swiggy Style) */}
+      {newOrderAlert && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl border border-gray-100 flex flex-col gap-4 animate-in slide-in-from-bottom duration-300">
+             {/* Header */}
+            <div className="bg-gradient-to-r from-[#5f48c6] to-[#fa6a19] px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-white animate-bounce text-lg">🔔</span>
+                <span className="text-white font-bold text-sm tracking-wider uppercase">New Delivery Request</span>
+              </div>
+              <button 
+                onClick={() => {
+                  suppressOrder(newOrderAlert.id)
+                  setNewOrderAlert(null)
+                }}
+                className="text-white/80 hover:text-white text-xs font-bold bg-white/10 px-3 py-1 rounded-full"
+              >
+                Dismiss
+              </button>
+            </div>
+
+            {/* Order Content */}
+            <div className="px-6 py-2 flex flex-col gap-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <Text className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5">Order ID</Text>
+                  <Heading className="text-2xl font-black text-gray-900 mt-0.5">#{newOrderAlert.display_id}</Heading>
+                </div>
+                <div className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-xs font-black">
+                  {newOrderAlert.items?.reduce((acc: number, item: any) => acc + item.quantity, 0) || 0} items
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 mt-2 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                <div>
+                  <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Store/Warehouse</Text>
+                  <Text className="text-sm font-bold text-gray-800">Kerala Warehouse (Kochi)</Text>
+                </div>
+                <div className="w-full h-px bg-gray-200/60 my-1" />
+                <div>
+                  <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Customer Location</Text>
+                  <Text className="text-sm font-bold text-gray-800 leading-tight">
+                    {newOrderAlert.shipping_address?.first_name} {newOrderAlert.shipping_address?.last_name}
+                  </Text>
+                  <Text className="text-xs text-gray-500 mt-0.5 leading-snug">
+                    {newOrderAlert.shipping_address?.address_1}, {newOrderAlert.shipping_address?.city}
+                  </Text>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-6 pt-2 flex gap-3 border-t border-gray-100 mt-2">
+              <button 
+                onClick={() => {
+                  suppressOrder(newOrderAlert.id)
+                  setNewOrderAlert(null)
+                }}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold py-3.5 rounded-xl transition-colors"
+              >
+                Decline
+              </button>
+              <button 
+                onClick={async () => {
+                  const orderId = newOrderAlert.id
+                  setNewOrderAlert(null)
+                  await handleUpdateStatus(orderId, "assigned")
+                }}
+                className="flex-[2] bg-[#5f48c6] hover:bg-[#4a3699] text-white text-sm font-bold py-3.5 rounded-xl transition-all shadow-md shadow-[#5f48c6]/20 flex justify-center items-center gap-1.5"
+              >
+                Accept Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
